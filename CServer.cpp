@@ -1,4 +1,5 @@
 #include "CServer.hpp"
+#include "HttpConnection.hpp"
 
 CServer::CServer(net::io_context &ioc, unsigned short &port)
     : _ioc(ioc), _acceptor(ioc, tcp::endpoint(tcp::v4(), port)), _socket(ioc) {}
@@ -13,6 +14,11 @@ void CServer::start() {
         self->start();
         return;
       }
+      //创建新连接 并创建HttpConnection对象，并开始处理请求。
+      std::make_shared<HttpConnection>(std::move(_socket))->start();
+      //继续监听
+      self->start();
+      
     } catch (const std::exception &e) {
       std::cerr << e.what() << '\n';
       self->start();
