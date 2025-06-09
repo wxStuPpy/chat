@@ -2,6 +2,7 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/signal_set.hpp>
 #include <memory>
 #include <iostream>
 #include <unordered_map>
