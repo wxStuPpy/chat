@@ -7,7 +7,7 @@ HttpConnection::HttpConnection(tcp::socket socket)
 
 }
 void HttpConnection::start(){
-    // 获取当前对象的智能指针
+    
     auto self(shared_from_this());
 
     // 异步读取HTTP请求

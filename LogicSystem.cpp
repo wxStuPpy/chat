@@ -14,7 +14,7 @@ void LogicSystem::regGet(std::string url,HttpHandler handler){
 }
 
 LogicSystem::LogicSystem(){
-    regGet("/get_test",[](std::shared_ptr<HttpConnection> conn){
+    regGet("/get_test/",[](std::shared_ptr<HttpConnection> conn){
         beast::ostream(conn->_response.body()) << "recvive get_test request";
       });
 }
