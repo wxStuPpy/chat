@@ -40,6 +40,8 @@ private:
      */
     void handleReq();
 
+    void preParseGetParam();
+
     // 私有成员变量
     tcp::socket _socket;                  // 与客户端通信的TCP套接字
     beast::flat_buffer _buffer{8192};     // 接收HTTP数据的缓冲区（初始大小8KB）
@@ -49,4 +51,6 @@ private:
         _socket.get_executor(),           // 使用socket的执行器
         std::chrono::seconds(60)          // 默认超时时间60秒
     };
+    std::string _getURL;
+    std::unordered_map<std::string, std::string> _getParams;
 };
