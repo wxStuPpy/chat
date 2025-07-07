@@ -57,37 +57,62 @@ void HttpConnection::checkDeadline(){
         });
 }
 
-void HttpConnection::handleReq(){
-    // 设置响应的版本与请求的版本一致
-    _response.version(_request.version());
-    _response.keep_alive(false);
+void HttpConnection::handleReq() {
+  // 设置响应的版本与请求的版本一致
+  _response.version(_request.version());
+  _response.keep_alive(false);
 
-    if(_request.method() == http::verb::get){
-        // 处理GET请求
-        // 调用LogicSystem实例的handleGet方法处理GET请求
-      preParseGetParam();
-      bool success=LogicSystem::getInstance()->handleGet(_getURL,shared_from_this());
-        // 如果处理失败
-      if(!success){
-            // 设置响应状态码为未找到
-        _response.result(http::status::not_found);
-            // 设置响应头中的内容类型为纯文本
-        _response.set(http::field::content_type, "text/plain");
-            // 向响应体写入"URL Not Found"
-        beast::ostream(_response.body()) << "URL Not Found\r\n";
-            // 写入响应
-        writeResponse();
-        return;
-      }
-
-        // 如果处理成功
-      _response.result(http::status::ok);
-        // 设置响应头中的服务器名称
-      _response.set(http::field::server, "gateServer");
-        // 写入响应
+  if (_request.method() == http::verb::get) {
+    // 处理GET请求
+    // 调用LogicSystem实例的handleGet方法处理GET请求
+    preParseGetParam();
+    bool success =
+        LogicSystem::getInstance()->handleGet(_getURL, shared_from_this());
+    // 如果处理失败
+    if (!success) {
+      // 设置响应状态码为未找到
+      _response.result(http::status::not_found);
+      // 设置响应头中的内容类型为纯文本
+      _response.set(http::field::content_type, "text/plain");
+      // 向响应体写入"URL Not Found"
+      beast::ostream(_response.body()) << "URL Not Found\r\n";
+      // 写入响应
       writeResponse();
       return;
     }
+
+    // 如果处理成功
+    _response.result(http::status::ok);
+    // 设置响应头中的服务器名称
+    _response.set(http::field::server, "gateServer");
+    // 写入响应
+    writeResponse();
+    return;
+  }
+
+  if (_request.method() == http::verb::post) {
+    bool success =
+        LogicSystem::getInstance()->handlePost(_request.target().to_string(), shared_from_this());
+
+    if (!success) {
+
+      _response.result(http::status::not_found);
+
+      _response.set(http::field::content_type, "text/plain");
+
+      beast::ostream(_response.body()) << "URL Not Found\r\n";
+
+      writeResponse();
+      return;
+    }
+
+    _response.result(http::status::ok);
+
+    _response.set(http::field::server, "gateServer");
+
+    writeResponse();
+    return;
+  }
 }
 
 void HttpConnection::writeResponse(){
