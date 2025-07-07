@@ -2,8 +2,14 @@
 #include "HttpConnection.hpp"
 
 LogicSystem::LogicSystem(){
-    regGet("/get_test/",[](std::shared_ptr<HttpConnection> conn){
+    regGet("/get_test",[](std::shared_ptr<HttpConnection> conn){
         beast::ostream(conn->_response.body()) << "recvive get_test request";
+        int i = 0;
+        for (auto& elem : conn->_getParams) {
+            i++;
+            beast::ostream(conn->_response.body()) << "param" << i << " key is " << elem.first;
+            beast::ostream(conn->_response.body()) << ", " <<  " value is " << elem.second << std::endl;
+        }
       });
     //   regPost("/post_test/",[](std::shared_ptr<HttpConnection> conn){
     //     beast::ostream(conn->_response.body()) << "recvive post_test request";
