@@ -3,7 +3,7 @@
 #include "ConfigMgr.hpp"
 
 int main(int argc, char **argv) {
-  ConfigMgr gCfgMgr;
+  auto &gCfgMgr=ConfigMgr::getInstance();
   std::string gate_port_str = gCfgMgr["GateServer"]["Port"];
   unsigned short gate_port = atoi(gate_port_str.c_str());
 

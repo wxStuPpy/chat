@@ -1,21 +1,25 @@
 #include "CServer.hpp"
 #include "HttpConnection.hpp"
+#include "AsioIOServicePool.hpp"
 
 CServer::CServer(net::io_context &ioc, unsigned short &port)
-    : _ioc(ioc), _acceptor(ioc, tcp::endpoint(tcp::v4(), port)), _socket(ioc) {}
+    : _ioc(ioc), _acceptor(ioc, tcp::endpoint(tcp::v4(), port)) {}
 
 CServer::~CServer() {}
 
 void CServer::start() {
   auto self(shared_from_this());
-  _acceptor.async_accept(_socket, [self](boost::system::error_code ec) {
+  auto &io_context=AsioIOServicePool::getInstance()->getIOService();
+  auto new_conn=std::make_shared<HttpConnection>(io_context);
+  _acceptor.async_accept(new_conn->getSocket(), [self,new_conn](boost::system::error_code ec) {
     try { // 如果有错误发生，则放弃这个连接，继续等待下一个连接。
       if (ec) {
         self->start();
         return;
       }
       //创建新连接 并创建HttpConnection对象，并开始处理请求。
-      std::make_shared<HttpConnection>(std::move(self->_socket))->start();
+      //std::make_shared<HttpConnection>(std::move(self->_socket))->start();
+      new_conn->start();
       //继续监听
       self->start();
       

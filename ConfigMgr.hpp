@@ -23,7 +23,6 @@ struct SectionInfo{
 
 class ConfigMgr {
 public:
-   ConfigMgr();
    ~ConfigMgr(){_sections.clear();}
    SectionInfo operator[](const std::string& key){
         if(_sections.find(key) == _sections.end()){
@@ -40,6 +39,12 @@ public:
         _sections = other._sections;
     }
 
+    static ConfigMgr&getInstance(){
+        static ConfigMgr instance;
+        return instance;
+    }
+
 private:
+   ConfigMgr();
   std::map<std::string, SectionInfo> _sections;
 };

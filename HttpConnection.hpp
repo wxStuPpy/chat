@@ -9,37 +9,14 @@ class HttpConnection : public std::enable_shared_from_this<HttpConnection>
 {
     friend class LogicSystem; // 允许LogicSystem访问私有成员
 public:
-    /**
-     * @brief 构造函数，接收已连接的socket
-     * @param socket 从acceptor获取的TCP socket（右值引用，移动语义）
-     */
-    HttpConnection(tcp::socket socket);
-
-    /**
-     * @brief 启动连接处理，触发异步读取请求
-     * 调用后开始接收HTTP请求，后续流程由异步回调驱动
-     */
+    HttpConnection(boost::asio::io_context &ioc);
     void start();
+    tcp::socket &getSocket();
 
 private:
-    /**
-     * @brief 检查连接超时
-     * 定时检查连接是否超时，超时则关闭socket
-     */
     void checkDeadline();
-
-    /**
-     * @brief 将HTTP响应异步写入socket
-     * 处理完成后自动管理连接生命周期（保持或关闭）
-     */
     void writeResponse();
-
-    /**
-     * @brief 处理HTTP请求内容
-     * 解析请求路径、方法和参数，生成对应的响应内容
-     */
     void handleReq();
-
     void preParseGetParam();
 
     // 私有成员变量
