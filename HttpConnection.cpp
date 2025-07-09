@@ -7,7 +7,7 @@ HttpConnection::HttpConnection(boost::asio::io_context &ioc)
 
 }
 
-HttpConnection::getSocket&(){
+tcp::socket& HttpConnection::getSocket(){
     return _socket;
 }
 

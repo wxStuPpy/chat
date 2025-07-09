@@ -1,6 +1,6 @@
 #include"AsioIOServicePool.hpp"
 
-AsioIOServicePool::AsioIOServicePool(std::size_t size = std::thread::hardware_concurrency())
+AsioIOServicePool::AsioIOServicePool(std::size_t size )
 :_IOServices(size),_Works(size),_nextIOService(0)
 {
     for(std::size_t i=0;i<size;++i)

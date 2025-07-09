@@ -17,6 +17,7 @@ public:
     ~RPConPool();
     void close();
     std::unique_ptr<VerifyService::Stub>getConnection();
+    void retrunConnection(std::unique_ptr<VerifyService::Stub> stub);
 private:
   std::atomic<bool> _isStop;
   size_t _poolSize;
@@ -34,6 +35,6 @@ public:
     GetVerifyRsp GetVerifyCode(std::string email);
 
 private:
-    VerifyGrpcClient()=default;
-    std::unique_ptr<VerifyService::Stub> _stub;
+    VerifyGrpcClient();
+    std::unique_ptr<RPConPool> _pool;
 };

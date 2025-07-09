@@ -1,4 +1,5 @@
 #include "VerifyGrpcClient.hpp"
+#include "ConfigMgr.hpp"
 
 RPConPool::RPConPool(size_t poolSize,std::string host,std::string port){
     for(size_t i = 0;i < poolSize;++i){
@@ -20,23 +21,36 @@ void RPConPool::close(){
     _cond.notify_all();
 }
 
+void RPConPool::retrunConnection(std::unique_ptr<VerifyService::Stub> stub){
+    std::lock_guard<std::mutex> lock(_mutex);
+    if(_isStop){
+        return;
+    }
+    // 将连接放回队列中
+    _connections.push(std::move(stub));
+    _cond.notify_one();
+}
+
 std::unique_ptr<VerifyService::Stub> RPConPool::getConnection(){
     std::unique_lock<std::mutex> lock(_mutex);
     // 等待条件变量，直到有可用的连接或停止信号
     _cond.wait(lock, [this](){return !_connections.empty() || _isStop;});
-
-    // 如果收到停止信号，则返回nullptr
     if(_isStop){
         return nullptr;
     }
-
     // 从连接队列中取出一个连接
     std::unique_ptr<VerifyService::Stub> stub = std::move(_connections.front());
     // 从队列中移除该连接
     _connections.pop();
-
     // 返回连接
     return stub;
+}
+
+VerifyGrpcClient::VerifyGrpcClient(){
+    auto& gCfgMgr = ConfigMgr::getInstance();
+    std::string host = gCfgMgr["VarifyServer"]["Host"];
+    std::string port = gCfgMgr["VarifyServer"]["Port"];
+    _pool.reset(new RPConPool(5, host, port));
 }
 
  GetVerifyRsp VerifyGrpcClient::GetVerifyCode(std::string email) {
@@ -45,14 +59,17 @@ std::unique_ptr<VerifyService::Stub> RPConPool::getConnection(){
         GetVerifyReq request;
         request.set_email(email);
 
-        Status status = _stub->GetVerifyCode(&context, request, &reply);
+        auto stub = _pool->getConnection();
+        Status status = stub->GetVerifyCode(&context, request, &reply);
 
         if (status.ok()) {
-
+            _pool->retrunConnection(std::move(stub));
             return reply;
         }
         else {
+            _pool->retrunConnection(std::move(stub));
             reply.set_error(ErrorCodes::RPCFailed);
             return reply;
         }
+       
     }

@@ -30,14 +30,8 @@ public:
         }
         return _sections[key];
     }
-    ConfigMgr& operator=(const ConfigMgr& other){
-        if(this != &other)
-            _sections = other._sections;
-        return *this;
-    }
-    ConfigMgr(const ConfigMgr& other){
-        _sections = other._sections;
-    }
+    ConfigMgr& operator=(const ConfigMgr& other)=delete;
+    ConfigMgr(const ConfigMgr& other)=delete;
 
     static ConfigMgr&getInstance(){
         static ConfigMgr instance;

@@ -3,7 +3,6 @@ project(chat)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -std=c++20")
 
-# 手动指定 gRPC 模块路径（根据实际情况调整）
 list(APPEND CMAKE_PREFIX_PATH "/usr/local/lib/cmake/grpc")
 
 # 查找依赖
