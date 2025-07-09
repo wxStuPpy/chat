@@ -9,3 +9,4 @@ message.proto
 *.exe       # 可执行文件
 *.out       # 临时输出文件
 *.log       # 日志文件
+*.ini
