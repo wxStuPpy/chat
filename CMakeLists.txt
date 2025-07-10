@@ -20,15 +20,18 @@ list(APPEND SRC ${PROTO_SRCS} ${GRPC_SRCS})
 # 创建可执行文件
 add_executable(server ${SRC})
 
-# 链接库
+# 查找 hiredis 库
+find_library(HIREDIS_LIBRARY NAMES hiredis REQUIRED)
+
+# 链接库时添加 ${HIREDIS_LIBRARY}
 target_link_libraries(server
   PRIVATE
   ${Protobuf_LIBRARIES}
   Boost::filesystem
   gRPC::grpc++
   gRPC::grpc++_reflection
+  ${HIREDIS_LIBRARY}      
 )
-
 # 头文件目录
 target_include_directories(server
   PRIVATE
