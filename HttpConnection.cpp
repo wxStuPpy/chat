@@ -51,7 +51,6 @@ void HttpConnection::start(){
 
 void HttpConnection::checkDeadline(){
     auto self(shared_from_this());
-
     // 设置定时器异步等待
     _deadlineTimer.async_wait(
         [self](beast::error_code ec){
@@ -129,7 +128,7 @@ void HttpConnection::writeResponse(){
     http::async_write(_socket,_response, 
         [self](beast::error_code ec, std::size_t bytes_transferred)
         {
-            // 关闭socket的发送功能(关闭发送功端) 
+            // 关闭socket的发送功能(关闭发送端) 
             self->_socket.shutdown(tcp::socket::shutdown_send, ec);
             // 取消计时器
             self->_deadlineTimer.cancel();
