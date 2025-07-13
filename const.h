@@ -19,6 +19,19 @@
 #include <mutex>
 #include <condition_variable>
 #include <hiredis/hiredis.h>
+#include <jdbc/mysql_driver.h>
+#include <jdbc/mysql_connection.h>
+#include <jdbc/cppconn/prepared_statement.h>
+#include <jdbc/cppconn/resultset.h>
+#include <jdbc/cppconn/statement.h>
+#include <jdbc/cppconn/exception.h>
+#include <iostream>
+#include <functional>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <string>
+#include <thread>
 
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -34,6 +47,22 @@ enum ErrorCodes {
 	VerifyExpired=1003,//验证码过期
 	VerifyCodeErr=1004,//验证码错误
 	UserExist=1005,//用户已存在
+	PasswdErr=1006,
 };
 
-#define CODEPREFIX "code_"//验证码前缀
+// Defer类
+class Defer {
+public:
+	// 接受一个lambda表达式或者函数指针
+	Defer(std::function<void()> func) : _func(func) {}
+
+	// 析构函数中执行传入的函数
+	~Defer() {
+		_func();
+	}
+
+private:
+	std::function<void()> _func;
+};
+
+#define CODEPREFIX  "code_"

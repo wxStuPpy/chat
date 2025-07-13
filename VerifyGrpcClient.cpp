@@ -48,8 +48,8 @@ std::unique_ptr<VerifyService::Stub> RPConPool::getConnection(){
 
 VerifyGrpcClient::VerifyGrpcClient(){
     auto& gCfgMgr = ConfigMgr::getInstance();
-    std::string host = gCfgMgr["VarifyServer"]["Host"];
-    std::string port = gCfgMgr["VarifyServer"]["Port"];
+    std::string host = gCfgMgr["VerifyServer"]["Host"];
+    std::string port = gCfgMgr["VerifyServer"]["Port"];
     _pool.reset(new RPConPool(5, host, port));
 }
 

@@ -27,11 +27,10 @@ void TestRedisMgr() {
 }
 
 int main(int argc, char **argv) {
-  TestRedisMgr();
+  //TestRedisMgr();
   auto &gCfgMgr=ConfigMgr::getInstance();
   std::string gate_port_str = gCfgMgr["GateServer"]["Port"];
   unsigned short gate_port = atoi(gate_port_str.c_str());
-
   try {
     unsigned short port = gate_port;
     net::io_context ioc{1};
