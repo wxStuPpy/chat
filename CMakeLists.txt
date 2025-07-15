@@ -21,15 +21,10 @@ find_library(MYSQL_CONNECTOR_LIB
   PATHS /usr/lib64
 )
 
-# 生成 Protobuf 和 gRPC 代码
-set(PROTO_FILE ${CMAKE_SOURCE_DIR}/message.proto)
-
-
-# 源文件（包含所有 cpp + 生成的 pb.cc）
+# 源文件
 file(GLOB SRC
   "${CMAKE_SOURCE_DIR}/src/*.cpp"
 )
-list(APPEND SRC ${PROTO_SRCS} ${GRPC_SRCS})
 
 # 可执行文件
 add_executable(server ${SRC})
