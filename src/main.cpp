@@ -29,6 +29,8 @@ void TestRedisMgr() {
 int main(int argc, char **argv) {
   //TestRedisMgr();
   auto &gCfgMgr=ConfigMgr::getInstance();
+  Logger::init("/home/ywx/study/Chat/logs");
+  Logger::log(LogLevel::info, "Server started.");
   std::string gate_port_str = gCfgMgr["GateServer"]["Port"];
   unsigned short gate_port = atoi(gate_port_str.c_str());
   try {

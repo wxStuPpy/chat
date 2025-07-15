@@ -32,6 +32,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <string>
 #include <thread>
+#include "Logger.hpp"
 
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>

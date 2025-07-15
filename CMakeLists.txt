@@ -11,6 +11,8 @@ set(MYSQL_CONNECTOR_INCLUDE_DIR "/usr/include/mysql-cppconn")
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem)
+find_package(Boost REQUIRED COMPONENTS filesystem log log_setup thread date_time)
+
 
 # 查找 hiredis 库
 find_library(HIREDIS_LIBRARY NAMES hiredis REQUIRED)
@@ -48,4 +50,5 @@ target_link_libraries(server
     Boost::filesystem
     ${HIREDIS_LIBRARY}
     ${MYSQL_CONNECTOR_LIB}
+    Boost::log Boost::log_setup Boost::thread Boost::date_time
 )
