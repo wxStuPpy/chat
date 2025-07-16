@@ -1,5 +1,6 @@
 #include "VerifyGrpcClient.hpp"
 #include "ConfigMgr.hpp"
+#include "Logger.hpp"
 
 RPConPool::RPConPool(size_t poolSize,std::string host,std::string port){
     for(size_t i = 0;i < poolSize;++i){
@@ -63,10 +64,15 @@ VerifyGrpcClient::VerifyGrpcClient(){
         Status status = stub->GetVerifyCode(&context, request, &reply);
 
         if (status.ok()) {
+            Logger::log(LogLevel::info, "GetVerifyCode RPC succeeded for email: " + email);
             _pool->retrunConnection(std::move(stub));
             return reply;
         }
         else {
+            Logger::log(LogLevel::error, 
+            "GetVerifyCode RPC failed for email: " + email +
+            ", error code: " + std::to_string(status.error_code()) +
+            ", error message: " + status.error_message());
             _pool->retrunConnection(std::move(stub));
             reply.set_error(ErrorCodes::RPCFailed);
             return reply;
