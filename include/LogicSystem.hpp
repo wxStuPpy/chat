@@ -12,8 +12,6 @@ public:
     void regGet(std::string, HttpHandler);
     bool handlePost(std::string, std::shared_ptr<HttpConnection>);
     void regPost(std::string, HttpHandler);
-    // bool handlePost(std::string,std::shared_ptr<HttpConnection>);
-    // void regPost(std::string,HttpHandler);
 
 private:
     LogicSystem();

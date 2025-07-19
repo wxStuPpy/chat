@@ -51,6 +51,8 @@ enum ErrorCodes {
 	PasswdErr=1006,//密码错误
 	EmailNotMatch=1007,//邮箱不匹配
 	PasswdUpFailed=1008,//密码更新失败
+	PasswdInvalid=1009,//密码错误
+	RPCGetFailed=1010,//RPC获取聊天服务器失败
 };
 
 // Defer类

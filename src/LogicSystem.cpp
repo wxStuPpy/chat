@@ -1,6 +1,7 @@
 #include "LogicSystem.hpp"
 #include "HttpConnection.hpp"
 #include "VerifyGrpcClient.hpp"
+#include "StatusGrpcClient.hpp"
 #include "RedisMgr.hpp"
 #include "MysqlMgr.hpp"
 #include "Logger.hpp"
@@ -17,7 +18,7 @@ LogicSystem::LogicSystem() {
           << ", " << " value is " << elem.second << std::endl;
     }
   });
-  regPost("/post_test", [](std::shared_ptr<HttpConnection> conn) {
+  regPost("/get_verifycode", [](std::shared_ptr<HttpConnection> conn) {
     auto body_str =
         boost::beast::buffers_to_string(conn->_request.body().data());
     Logger::log(LogLevel::info, "receive body is "+ body_str);
@@ -58,7 +59,7 @@ LogicSystem::LogicSystem() {
     json js = json::parse(body_str);
     json root;
     if (js.is_discarded()) {
-        std::cout << "Failed to parse JSON data!" << std::endl;
+        Logger::log(LogLevel::error, "failed to parse JSON");
         root["error"] = ErrorCodes::Error_Json;
         std::string jsonstr = root.dump();
         beast::ostream(conn->_response.body()) << jsonstr;
@@ -114,14 +115,14 @@ LogicSystem::LogicSystem() {
     });
 
     //重置回调逻辑
-regPost("/reset_pwd", [](std::shared_ptr<HttpConnection> conn) {
+    regPost("/reset_pwd", [](std::shared_ptr<HttpConnection> conn) {
     auto body_str = boost::beast::buffers_to_string(conn->_request.body().data());
     Logger::log(LogLevel::info, "reset receive body is "+ body_str);
     conn->_response.set(http::field::content_type, "text/json");
     json js = json::parse(body_str);
     json root;
     if (js.is_discarded()) {
-        std::cout << "Failed to parse JSON data!" << std::endl;
+        Logger::log(LogLevel::error, "failed to parse JSON");
         root["error"] = ErrorCodes::Error_Json;
         std::string jsonstr = root.dump();
         beast::ostream(conn->_response.body()) << jsonstr;
@@ -141,7 +142,7 @@ regPost("/reset_pwd", [](std::shared_ptr<HttpConnection> conn) {
         return true;
     }
     if (verify_code != js["verifycode"].get<std::string>()) {
-        std::cout << " verify code error" << std::endl;
+        Logger::log(LogLevel::error, " verify code error");
         root["error"] = ErrorCodes::VerifyCodeErr;
         std::string jsonstr = root.dump();
         beast::ostream(conn->_response.body()) << jsonstr;
@@ -175,6 +176,51 @@ regPost("/reset_pwd", [](std::shared_ptr<HttpConnection> conn) {
     beast::ostream(conn->_response.body()) << jsonstr;
     return true;
     });
+
+    regPost("/user_login", [](std::shared_ptr<HttpConnection> conn) {
+    auto body_str = boost::beast::buffers_to_string(conn->_request.body().data());
+    Logger::log(LogLevel::info, "login receive body is "+ body_str);
+    conn->_response.set(http::field::content_type, "text/json");
+    json js=json::parse(body_str);
+    json root;
+    if (js.is_discarded()) {
+        Logger::log(LogLevel::error, "failed to parse JSON");
+        root["error"] = ErrorCodes::Error_Json;
+        std::string jsonstr = root.dump();
+        beast::ostream(conn->_response.body()) << jsonstr;
+        return true;
+    }
+    auto name = js["user"].get<std::string>();
+    auto pwd = js["passwd"].get<std::string>();
+    UserInfo userInfo;
+    //查询数据库判断用户名和密码是否匹配
+    bool pwd_valid = MysqlMgr::getInstance()->CheckPwd(name, pwd, userInfo);
+    if (!pwd_valid) {
+        Logger::log(LogLevel::error, " password invalid");
+        root["error"] = ErrorCodes::PasswdInvalid;
+        std::string jsonstr = root.dump();
+        beast::ostream(conn->_response.body()) << jsonstr;
+        return true;
+    }
+    //查询StatusServer找到合适的连接
+    auto reply = StatusGrpcClient::getInstance()->GetChatServer(userInfo._uid);
+    if (reply.error()) {
+        Logger::log(LogLevel::error, " rpc get chat server failed"+ reply.error());
+        root["error"] = ErrorCodes::RPCGetFailed;
+        std::string jsonstr = root.dump();
+        beast::ostream(conn->_response.body()) << jsonstr;
+        return true;
+    }
+    Logger::log(LogLevel::info, " login succeed to "+ name);
+    root["error"] = 0;
+    root["user"] = name;
+    root["uid"] = userInfo._uid;
+    root["token"] = reply.token();
+    root["host"] = reply.host();
+    std::string jsonstr = root.dump();
+    beast::ostream(conn->_response.body()) << jsonstr;
+    return true;
+    });
 }
 
 bool LogicSystem::handleGet(std::string path ,std::shared_ptr<HttpConnection>conn){
@@ -182,6 +228,7 @@ bool LogicSystem::handleGet(std::string path ,std::shared_ptr<HttpConnection>con
         _getHandlers[path](conn);
         return true;
     }
+    Logger::log(LogLevel::error,"get handler not found");
     return false;
 }
 
@@ -194,6 +241,7 @@ bool LogicSystem::handlePost(std::string path, std::shared_ptr<HttpConnection>co
         _postHandlers[path](conn);
         return true;
     }
+    Logger::log(LogLevel::error,"post handler not found");
     return false;
 }
 void LogicSystem::regPost(std::string url, HttpHandler handler){
