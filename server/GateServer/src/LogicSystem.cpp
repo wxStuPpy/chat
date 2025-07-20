@@ -190,11 +190,11 @@ LogicSystem::LogicSystem() {
         beast::ostream(conn->_response.body()) << jsonstr;
         return true;
     }
-    auto name = js["user"].get<std::string>();
+    auto email = js["email"].get<std::string>();
     auto pwd = js["passwd"].get<std::string>();
     UserInfo userInfo;
     //查询数据库判断用户名和密码是否匹配
-    bool pwd_valid = MysqlMgr::getInstance()->CheckPwd(name, pwd, userInfo);
+    bool pwd_valid = MysqlMgr::getInstance()->CheckPwd(email, pwd, userInfo);
     if (!pwd_valid) {
         Logger::log(LogLevel::error, " password invalid");
         root["error"] = ErrorCodes::PasswdInvalid;
@@ -211,12 +211,13 @@ LogicSystem::LogicSystem() {
         beast::ostream(conn->_response.body()) << jsonstr;
         return true;
     }
-    Logger::log(LogLevel::info, " login succeed to "+ name);
+    Logger::log(LogLevel::info, " login succeed to "+ email);
     root["error"] = 0;
-    root["user"] = name;
+    root["email"] = email;
     root["uid"] = userInfo._uid;
     root["token"] = reply.token();
     root["host"] = reply.host();
+    root["port"] = reply.port();
     std::string jsonstr = root.dump();
     beast::ostream(conn->_response.body()) << jsonstr;
     return true;

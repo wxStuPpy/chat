@@ -7,8 +7,8 @@
 int main(int argc, char **argv) {
 
   auto &gCfgMgr = ConfigMgr::getInstance();
-  Logger::init("/home/ywx/study/Chat/logs/server.log");
-  Logger::log(LogLevel::info, "Server started.");
+  Logger::init("/home/ywx/study/Chat/logs/GateServer.log");
+  Logger::log(LogLevel::info, "GateServer started.");
   std::string gate_port_str = gCfgMgr["GateServer"]["Port"];
   unsigned short gate_port = atoi(gate_port_str.c_str());
   try {

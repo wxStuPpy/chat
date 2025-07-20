@@ -9,4 +9,20 @@ logs/
 *.exe       # 可执行文件
 *.out       # 临时输出文件
 *.log       # 日志文件
-*ini
+*.ini
+
+
+# 忽略 StatusServer 目录下的所有内容
+/server/StatusServer/**
+# 不忽略 src 目录（为了能访问里面的文件）
+!/server/StatusServer/src/
+# 忽略 src 目录下的所有文件
+/server/StatusServer/src/**
+
+!/server/StatusServer/src/main.cpp
+!/server/StatusServer/src/StatusServiceImpl.cpp
+
+!/server/StatusServer/include/
+/server/StatusServer/include/**
+!/server/StatusServer/include/StatusServiceImpl.hpp
+
