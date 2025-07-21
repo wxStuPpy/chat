@@ -18,11 +18,25 @@ logs/
 !/server/StatusServer/src/
 # 忽略 src 目录下的所有文件
 /server/StatusServer/src/**
-
 !/server/StatusServer/src/main.cpp
 !/server/StatusServer/src/StatusServiceImpl.cpp
+!/server/StatusServer/src/message*
 
 !/server/StatusServer/include/
 /server/StatusServer/include/**
 !/server/StatusServer/include/StatusServiceImpl.hpp
+!/server/StatusServer/include/message*
+
+
+
+/server/ChatServer/**
+!/server/ChatServer/src/
+# 忽略 src 目录下的所有文件
+/server/ChatServer/src/**
+!/server/ChatServer/src/main.cpp
+!/server/ChatServer/src/
+
+!/server/ChatServer/include/
+/server/ChatServer/include/**
+!/server/ChatServer/include/
 
