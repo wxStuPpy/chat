@@ -1,13 +1,11 @@
 #include "CServer.hpp"
-#include "HttpConnection.hpp"
 #include "AsioIOServicePool.hpp"
-
-CServer::CServer(net::io_context &ioc, unsigned short &port)
-    : _ioc(ioc),_port(port),_acceptor(ioc, tcp::endpoint(tcp::v4(), port)) {
-      std::cout << "Server start success, listen on port : " << _port << endl;
-      startAccept();
-    }
-
+CServer::CServer(boost::asio::io_context& io_context, short port):_io_context(io_context), _port(port),
+_acceptor(io_context, tcp::endpoint(tcp::v4(),port))
+{
+	cout << "Server start success, listen on port : " << _port << endl;
+	startAccept();
+}
 CServer::~CServer() {
   std::cout << "Server stop" << endl;
 }
@@ -26,7 +24,7 @@ void CServer::clearSession(std::string sessionId) {
 }
 
 
-void CServer::handleAccept(shared_ptr<CSession>, const boost::system::error_code & error){
+void CServer::handleAccept(shared_ptr<CSession>new_session, const boost::system::error_code & error){
 
   if (!error) {
         new_session->start();
@@ -34,7 +32,7 @@ void CServer::handleAccept(shared_ptr<CSession>, const boost::system::error_code
         _sessions.insert(make_pair(new_session->getUuid(), new_session));
     }
     else {
-        Logger::log(LogLevel::error, "Accept error: " + error.message())
+        Logger::log(LogLevel::error, "Accept error: " + error.message());
     }
 
     startAccept();

@@ -27,7 +27,7 @@ void CSession::start(){
 
 void CSession::send(std::string msg, short msgid) {
 	std::lock_guard<std::mutex> lock(_send_lock);
-	int send_que_size = _send_que.size();
+	size_t send_que_size = _send_que.size();
 	if (send_que_size > MAX_SENDQUE) {
 		std::cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
 		return;
@@ -44,7 +44,7 @@ void CSession::send(std::string msg, short msgid) {
 
 void CSession::send(char* msg, short max_length, short msgid) {
 	std::lock_guard<std::mutex> lock(_send_lock);
-	int send_que_size = _send_que.size();
+	size_t send_que_size = _send_que.size();
 	if (send_que_size > MAX_SENDQUE) {
 		std::cout << "session: " << _uuid << " send que fulled, size is " << MAX_SENDQUE << endl;
 		return;
@@ -57,6 +57,31 @@ void CSession::send(char* msg, short max_length, short msgid) {
 	auto& msgnode = _send_que.front();
 	boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len), 
 		std::bind(&CSession::handleWrite, this, std::placeholders::_1, sharedSelf()));
+}
+
+void CSession::handleWrite(const boost::system::error_code& error, std::shared_ptr<CSession> shared_self) {
+	//增加异常处理
+	try {
+		if (!error) {
+			std::lock_guard<std::mutex> lock(_send_lock);
+			//cout << "send data " << _send_que.front()->_data+HEAD_LENGTH << endl;
+			_send_que.pop();
+			if (!_send_que.empty()) {
+				auto& msgnode = _send_que.front();
+				boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
+					std::bind(&CSession::handleWrite, this, std::placeholders::_1, shared_self));
+			}
+		}
+		else {
+			Logger::log(LogLevel::error, "write error: " + error.message());
+			close();
+			_server->clearSession(_uuid);
+		}
+	}
+	catch (std::exception& e) {
+		Logger::log(LogLevel::error, "Exception code is " + std::string(e.what()));
+	}
+	
 }
 
 void CSession::close() {
@@ -80,7 +105,7 @@ void CSession::asyncReadBody(int total_len)
 				return;
 			}
 			//这个if不会执行,因为回调函数只有可能出错或者大于total_len的长度，不会小于total_len
-			if (bytes_transfered < total_len) {
+			if (bytes_transfered < static_cast<size_t>(total_len)) {
 				std::cout << "read length not match, read [" << bytes_transfered << "] , total ["
 					<< total_len<<"]" << endl;
 				close();
@@ -160,30 +185,6 @@ void CSession::asyncReadHead(int total_len)
 		});
 }
 
-void CSession::handleWrite(const boost::system::error_code& error, std::shared_ptr<CSession> shared_self) {
-	//增加异常处理
-	try {
-		if (!error) {
-			std::lock_guard<std::mutex> lock(_send_lock);
-			//cout << "send data " << _send_que.front()->_data+HEAD_LENGTH << endl;
-			_send_que.pop();
-			if (!_send_que.empty()) {
-				auto& msgnode = _send_que.front();
-				boost::asio::async_write(_socket, boost::asio::buffer(msgnode->_data, msgnode->_total_len),
-					std::bind(&CSession::handleWrite, this, std::placeholders::_1, shared_self));
-			}
-		}
-		else {
-			Logger::log(LogLevel::error, "write error: " + error.message());
-			close();
-			_server->clearSession(_uuid);
-		}
-	}
-	catch (std::exception& e) {
-		Logger::log(LogLevel::error, "Exception code is " + std::string(e.what()));
-	}
-	
-}
 
 //读取完整长度
 void CSession::asyncReadFull(std::size_t maxLength, std::function<void(const boost::system::error_code&, std::size_t)> handler )

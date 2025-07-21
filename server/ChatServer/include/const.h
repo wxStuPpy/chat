@@ -53,6 +53,7 @@ enum ErrorCodes {
 	PasswdUpFailed=1008,//密码更新失败
 	PasswdInvalid=1009,//密码错误
 	RPCGetFailed=1010,//RPC获取聊天服务器失败
+	UidInvalid=1011,//用户id无效
 };
 
 // Defer类
@@ -81,3 +82,15 @@ private:
 };
 
 #define CODEPREFIX  "code_"
+
+enum MSG_IDS {
+	MSG_CHAT_LOGIN = 1005, //用户登陆
+	MSG_CHAT_LOGIN_RSP = 1006, //用户登陆回包
+};
+
+struct UserInfo {
+	std::string name;
+	std::string pwd;
+	int uid;
+	std::string email;
+};

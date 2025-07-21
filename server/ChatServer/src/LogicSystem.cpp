@@ -1,252 +1,115 @@
 #include "LogicSystem.hpp"
-#include "HttpConnection.hpp"
-#include "VerifyGrpcClient.hpp"
 #include "StatusGrpcClient.hpp"
-#include "RedisMgr.hpp"
 #include "MysqlMgr.hpp"
-#include "Logger.hpp"
+#include "const.h"
 
-LogicSystem::LogicSystem() {
-  regGet("/get_test", [](std::shared_ptr<HttpConnection> conn) {
-    beast::ostream(conn->_response.body()) << "recvive get_test request";
-    int i = 0;
-    for (auto &elem : conn->_getParams) {
-      i++;
-      beast::ostream(conn->_response.body())
-          << "param" << i << " key is " << elem.first;
-      beast::ostream(conn->_response.body())
-          << ", " << " value is " << elem.second << std::endl;
-    }
-  });
-  regPost("/get_verifycode", [](std::shared_ptr<HttpConnection> conn) {
-    auto body_str =
-        boost::beast::buffers_to_string(conn->_request.body().data());
-    Logger::log(LogLevel::info, "receive body is "+ body_str);
-    conn->_response.set(http::field::content_type, "text/json");
-    json js = json::parse(body_str);
-    json root;
-    if (js.is_discarded()) { // 检查是否解析失败
-      Logger::log(LogLevel::error, "failed to parse JSON");
-      root["error"] = ErrorCodes::Error_Json;
-      std::string jsonstr=root.dump();
-      beast::ostream(conn->_response.body()) << jsonstr;
-      return true;
-    } 
+using namespace std;
 
-    if(!js.contains("email")){
-      Logger::log(LogLevel::error, "json has no email");
-      root["error"] = ErrorCodes::Error_Json;
-      std::string jsonstr=root.dump();
-      beast::ostream(conn->_response.body()) << jsonstr;
-      return true;
-    }
-
-    auto email=js["email"].get<std::string>();
-    Logger::log(LogLevel::info, "email is "+ email);
-    GetVerifyRsp rsp = VerifyGrpcClient::getInstance()->GetVerifyCode(email);
-    root["email"]=js["email"];
-    root["error"] = rsp.error();;
-    std::string jsonstr=root.dump();
-    beast::ostream(conn->_response.body()) << jsonstr;
-    return true;
-  });
-
-
- regPost("/user_register", [](std::shared_ptr<HttpConnection> conn) {
-    auto body_str = boost::beast::buffers_to_string(conn->_request.body().data());
-    Logger::log(LogLevel::info, "register receive body is "+body_str);
-    conn->_response.set(http::field::content_type, "text/json");
-    json js = json::parse(body_str);
-    json root;
-    if (js.is_discarded()) {
-        Logger::log(LogLevel::error, "failed to parse JSON");
-        root["error"] = ErrorCodes::Error_Json;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    auto email = js["email"].get<std::string>();
-    auto name = js["user"].get<std::string>();
-    auto pwd = js["passwd"].get<std::string>();
-    auto confirm = js["confirm"].get<std::string>();
-    if (pwd != confirm) {
-       Logger::log(LogLevel::error, "passwd not match");
-        root["error"] = ErrorCodes::PasswdErr;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    //先查找redis中email对应的验证码是否合理
-    std::string  verify_code;
-    bool b_get_verify = RedisMgr::getInstance()->Get(CODEPREFIX+js["email"].get<std::string>(), verify_code);
-    if (!b_get_verify) {
-        Logger::log(LogLevel::error, " get verify code expired");
-        root["error"] = ErrorCodes::VerifyExpired;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    if (verify_code != js["verifycode"].get<std::string>()) {
-        Logger::log(LogLevel::error, " verify code error");
-        root["error"] = ErrorCodes::VerifyCodeErr;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    //查找数据库判断用户是否存在
-    int uid = MysqlMgr::getInstance()->RegUser(name, email, pwd);
-    if (uid == 0 || uid == -1) {
-        Logger::log(LogLevel::error, " user exist");
-        root["error"] = ErrorCodes::UserExist;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    root["error"] = 0;
-    root["uid"] = uid;
-    root["email"] = email;
-    root ["user"]= name;
-    root["passwd"] = pwd;
-    root["confirm"] = confirm;
-    root["verifycode"] = js["verifycode"].get<std::string>();
-    std::string jsonstr = root.dump();
-    beast::ostream(conn->_response.body()) << jsonstr;
-    return true;
-    });
-
-    //重置回调逻辑
-    regPost("/reset_pwd", [](std::shared_ptr<HttpConnection> conn) {
-    auto body_str = boost::beast::buffers_to_string(conn->_request.body().data());
-    Logger::log(LogLevel::info, "reset receive body is "+ body_str);
-    conn->_response.set(http::field::content_type, "text/json");
-    json js = json::parse(body_str);
-    json root;
-    if (js.is_discarded()) {
-        Logger::log(LogLevel::error, "failed to parse JSON");
-        root["error"] = ErrorCodes::Error_Json;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    auto email = js["email"].get<std::string>();
-    auto name = js["user"].get<std::string>();
-    auto pwd = js["passwd"].get<std::string>();
-    //先查找redis中email对应的验证码是否合理
-    std::string  verify_code;
-    bool b_get_verify = RedisMgr::getInstance()->Get(CODEPREFIX + js["email"].get<std::string>(), verify_code);
-    if (!b_get_verify) {
-        Logger::log(LogLevel::error, " get verify code expired");
-        root["error"] = ErrorCodes::VerifyExpired;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    if (verify_code != js["verifycode"].get<std::string>()) {
-        Logger::log(LogLevel::error, " verify code error");
-        root["error"] = ErrorCodes::VerifyCodeErr;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    //查询数据库判断用户名和邮箱是否匹配
-    bool email_valid = MysqlMgr::getInstance()->CheckEmail(name, email);
-    if (!email_valid) {
-        Logger::log(LogLevel::error, " email not match");
-        root["error"] = ErrorCodes::EmailNotMatch;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    //更新密码为最新密码
-    bool b_up = MysqlMgr::getInstance()->UpdatePwd(name, pwd);
-    if (!b_up) {
-       Logger::log(LogLevel::error, " update password failed");
-        root["error"] = ErrorCodes::PasswdUpFailed;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    Logger::log(LogLevel::info, " reset password succeed to "+ pwd);
-    root["error"] = 0;
-    root["email"] = email;
-    root["user"] = name;
-    root["passwd"] = pwd;
-    root["verifycode"] = js["verifycode"].get<std::string>();
-    std::string jsonstr = root.dump();
-    beast::ostream(conn->_response.body()) << jsonstr;
-    return true;
-    });
-
-    regPost("/user_login", [](std::shared_ptr<HttpConnection> conn) {
-    auto body_str = boost::beast::buffers_to_string(conn->_request.body().data());
-    Logger::log(LogLevel::info, "login receive body is "+ body_str);
-    conn->_response.set(http::field::content_type, "text/json");
-    json js=json::parse(body_str);
-    json root;
-    if (js.is_discarded()) {
-        Logger::log(LogLevel::error, "failed to parse JSON");
-        root["error"] = ErrorCodes::Error_Json;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    auto email = js["email"].get<std::string>();
-    auto pwd = js["passwd"].get<std::string>();
-    UserInfo userInfo;
-    //查询数据库判断用户名和密码是否匹配
-    bool pwd_valid = MysqlMgr::getInstance()->CheckPwd(email, pwd, userInfo);
-    if (!pwd_valid) {
-        Logger::log(LogLevel::error, " password invalid");
-        root["error"] = ErrorCodes::PasswdInvalid;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    //查询StatusServer找到合适的连接
-    auto reply = StatusGrpcClient::getInstance()->GetChatServer(userInfo._uid);
-    if (reply.error()) {
-        Logger::log(LogLevel::error, " rpc get chat server failed"+ reply.error());
-        root["error"] = ErrorCodes::RPCGetFailed;
-        std::string jsonstr = root.dump();
-        beast::ostream(conn->_response.body()) << jsonstr;
-        return true;
-    }
-    Logger::log(LogLevel::info, " login succeed to "+ email);
-    root["error"] = 0;
-    root["email"] = email;
-    root["uid"] = userInfo._uid;
-    root["token"] = reply.token();
-    root["host"] = reply.host();
-    root["port"] = reply.port();
-    std::string jsonstr = root.dump();
-    beast::ostream(conn->_response.body()) << jsonstr;
-    return true;
-    });
+LogicSystem::LogicSystem():_b_stop(false){
+	registerCallBacks();
+	_worker_thread = std::thread (&LogicSystem::dealMsg, this);
 }
 
-bool LogicSystem::handleGet(std::string path ,std::shared_ptr<HttpConnection>conn){
-    if(_getHandlers.find(path) != _getHandlers.end()){
-        _getHandlers[path](conn);
-        return true;
-    }
-    Logger::log(LogLevel::error,"get handler not found");
-    return false;
+LogicSystem::~LogicSystem(){
+	_b_stop = true;
+	_consume.notify_one();
+	_worker_thread.join();
 }
 
-void LogicSystem::regGet(std::string url,HttpHandler handler){
-    _getHandlers[url] = handler;
+void LogicSystem::postMsgToQue(shared_ptr < LogicNode> msg) {
+	std::unique_lock<std::mutex> unique_lk(_mutex);
+	_msg_que.push(msg);
+	//可以增加达到队列上限的逻辑
+	
+	//由0变为1则发送通知信号
+	if (_msg_que.size() == 1) {
+		unique_lk.unlock();
+		_consume.notify_one();
+	}
 }
 
-bool LogicSystem::handlePost(std::string path, std::shared_ptr<HttpConnection>conn){
-    if(_postHandlers.find(path) != _postHandlers.end()){
-        _postHandlers[path](conn);
-        return true;
-    }
-    Logger::log(LogLevel::error,"post handler not found");
-    return false;
-}
-void LogicSystem::regPost(std::string url, HttpHandler handler){
-    _postHandlers[url]=handler;
+void LogicSystem::dealMsg() {
+	for (;;) {
+		std::unique_lock<std::mutex> unique_lk(_mutex);
+		//判断队列为空则用条件变量阻塞等待，并释放锁
+		while (_msg_que.empty() && !_b_stop) {
+			_consume.wait(unique_lk);
+		}
+
+		//判断是否为关闭状态，把所有逻辑执行完后则退出循环
+		if (_b_stop ) {
+			while (!_msg_que.empty()) {
+				auto msg_node = _msg_que.front();
+				cout << "recv_msg id  is " << msg_node->_recvnode->_msg_id << endl;
+				auto call_back_iter = _fun_callbacks.find(msg_node->_recvnode->_msg_id);
+				if (call_back_iter == _fun_callbacks.end()) {
+					_msg_que.pop();
+					continue;
+				}
+				call_back_iter->second(msg_node->_session, msg_node->_recvnode->_msg_id,
+					std::string(msg_node->_recvnode->_data, msg_node->_recvnode->_cur_len));
+				_msg_que.pop();
+			}
+			break;
+		}
+
+		//如果没有停服，且说明队列中有数据
+		auto msg_node = _msg_que.front();
+		cout << "recv_msg id  is " << msg_node->_recvnode->_msg_id << endl;
+		auto call_back_iter = _fun_callbacks.find(msg_node->_recvnode->_msg_id);
+		if (call_back_iter == _fun_callbacks.end()) {
+			_msg_que.pop();
+			std::cout << "msg id [" << msg_node->_recvnode->_msg_id << "] handler not found" << std::endl;
+			continue;
+		}
+		call_back_iter->second(msg_node->_session, msg_node->_recvnode->_msg_id, 
+			std::string(msg_node->_recvnode->_data, msg_node->_recvnode->_cur_len));
+		_msg_que.pop();
+	}
 }
 
+void LogicSystem::registerCallBacks() {
+	_fun_callbacks[MSG_CHAT_LOGIN] = std::bind(&LogicSystem::loginHandler, this,
+		placeholders::_1, placeholders::_2, placeholders::_3);
+}
 
+void LogicSystem::loginHandler(shared_ptr<CSession> session, const short &msg_id, const string &msg_data) {
+	json reader=json::parse(msg_data);
+	json root;
+	auto uid = root["uid"].get<int>();
+	std::cout << "user login uid is  " << uid << " user token  is "
+		<< root["token"].get<std::string>() << endl;
+	//从状态服务器获取token匹配是否准确
+	auto rsp = StatusGrpcClient::getInstance()->Login(uid, root["token"].get<std::string>());
+	json rtvalue;
+	Defer defer([this, &rtvalue, session]() {
+		std::string return_str = rtvalue.dump();
+		session->send(return_str, MSG_CHAT_LOGIN_RSP);
+	});
+
+	rtvalue["error"] = rsp.error();
+	if (rsp.error() != ErrorCodes::Success) {
+		return;
+	}
+
+	//内存中查询用户信息
+	auto find_iter = _users.find(uid);
+	std::shared_ptr<UserInfo> user_info = nullptr;
+	if (find_iter == _users.end()) {
+		//查询数据库
+		user_info = MysqlMgr::getInstance()->GetUser(uid);
+		if (user_info == nullptr) {
+			rtvalue["error"] = ErrorCodes::UidInvalid;
+			return;
+		}
+
+		_users[uid] = user_info;
+	}
+	else {
+		user_info = find_iter->second;
+	}
+
+	rtvalue["uid"] = uid;
+	rtvalue["token"] = rsp.token();
+	rtvalue["name"] = user_info->name;
+}

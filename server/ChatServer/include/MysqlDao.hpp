@@ -123,12 +123,7 @@ private:
     std::thread _checkThread;
 };
 
-struct UserInfo {
-    std::string _name;
-    std::string _pwd;
-    int _uid;
-    std::string _email;
-};
+
 
 class MysqlDao
 {

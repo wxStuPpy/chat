@@ -1,20 +1,26 @@
 #pragma once
+
+#include "CSession.hpp"
 #include "const.h"
 
-class HttpConnection;
-using HttpHandler = std::function<void(std::shared_ptr<HttpConnection>)>;
-
-class LogicSystem : public Singleton<LogicSystem>
-{   
-    friend class Singleton<LogicSystem>;
+typedef  function<void(shared_ptr<CSession>, const short &msg_id, const string &msg_data)> FunCallBack;
+class LogicSystem:public Singleton<LogicSystem>
+{
+	friend class Singleton<LogicSystem>;
 public:
-    bool handleGet(std::string, std::shared_ptr<HttpConnection>);
-    void regGet(std::string, HttpHandler);
-    bool handlePost(std::string, std::shared_ptr<HttpConnection>);
-    void regPost(std::string, HttpHandler);
-
+	~LogicSystem();
+	void postMsgToQue(shared_ptr < LogicNode> msg);
 private:
-    LogicSystem();
-    std::map<std::string, HttpHandler> _postHandlers;
-    std::map<std::string, HttpHandler> _getHandlers;
+	LogicSystem();
+	void dealMsg();
+	void registerCallBacks();
+	void loginHandler(shared_ptr<CSession>, const short &msg_id, const string &msg_data);
+	std::thread _worker_thread;
+	std::queue<shared_ptr<LogicNode>> _msg_que;
+	std::mutex _mutex;
+	std::condition_variable _consume;
+	bool _b_stop;
+	std::map<short, FunCallBack> _fun_callbacks;
+	std::unordered_map<int, std::shared_ptr<UserInfo>> _users;
 };
+

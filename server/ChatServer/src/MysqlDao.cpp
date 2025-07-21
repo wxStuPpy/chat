@@ -196,12 +196,12 @@ bool MysqlDao::checkPwd(const std::string& email, const std::string& pwd, UserIn
         }
 
         // 填充用户信息
-        userInfo._name = res->getString("name");
-        userInfo._email = email;
-        userInfo._uid = res->getInt("uid");
-        userInfo._pwd = origin_pwd;
+        userInfo.name = res->getString("name");
+        userInfo.email = email;
+        userInfo.uid = res->getInt("uid");
+        userInfo.pwd = origin_pwd;
 
-        Logger::log(LogLevel::info, "checkPwd(): User [" + userInfo._name + "] authenticated successfully.");
+        Logger::log(LogLevel::info, "checkPwd(): User [" + userInfo.name + "] authenticated successfully.");
         return true;
     }
     catch (sql::SQLException& e) {
