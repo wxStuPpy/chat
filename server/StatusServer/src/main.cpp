@@ -4,6 +4,7 @@
 #include "MysqlMgr.hpp"
 #include "AsioIOServicePool.hpp"
 #include "StatusServiceImpl.hpp"
+
 void RunServer() {
     Logger::init("/home/ywx/study/Chat/logs/StatusServer.log");
     Logger::log(LogLevel::info, "StatusServer started.");

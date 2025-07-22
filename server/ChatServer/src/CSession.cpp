@@ -22,6 +22,7 @@ std::string& CSession::getUuid() {
 }
 
 void CSession::start(){
+	Logger::log(LogLevel::info, "session start");
 	asyncReadHead(HEAD_TOTAL_LEN);
 }
 
@@ -116,7 +117,7 @@ void CSession::asyncReadBody(int total_len)
 			memcpy(_recv_msg_node->_data , _data , bytes_transfered);
 			_recv_msg_node->_cur_len += bytes_transfered;
 			_recv_msg_node->_data[_recv_msg_node->_total_len] = '\0';
-			cout << "receive data is " << _recv_msg_node->_data << endl;
+			Logger::log(LogLevel::info, "receive data is " + std::string(_recv_msg_node->_data));
 			//此处将消息投递到逻辑队列中
 			LogicSystem::getInstance()->postMsgToQue(make_shared<LogicNode>(shared_from_this(), _recv_msg_node));
 			//继续监听头部接受事件

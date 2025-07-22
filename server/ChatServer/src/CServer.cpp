@@ -23,7 +23,6 @@ void CServer::clearSession(std::string sessionId) {
   }
 }
 
-
 void CServer::handleAccept(shared_ptr<CSession>new_session, const boost::system::error_code & error){
 
   if (!error) {
@@ -34,6 +33,5 @@ void CServer::handleAccept(shared_ptr<CSession>new_session, const boost::system:
     else {
         Logger::log(LogLevel::error, "Accept error: " + error.message());
     }
-
     startAccept();
 }

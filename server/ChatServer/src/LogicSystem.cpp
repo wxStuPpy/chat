@@ -43,6 +43,8 @@ void LogicSystem::dealMsg() {
 				cout << "recv_msg id  is " << msg_node->_recvnode->_msg_id << endl;
 				auto call_back_iter = _fun_callbacks.find(msg_node->_recvnode->_msg_id);
 				if (call_back_iter == _fun_callbacks.end()) {
+					Logger::log(LogLevel::info, 
+						"msg id [" + std::to_string(msg_node->_recvnode->_msg_id)+"] handler not found");
 					_msg_que.pop();
 					continue;
 				}
@@ -59,7 +61,8 @@ void LogicSystem::dealMsg() {
 		auto call_back_iter = _fun_callbacks.find(msg_node->_recvnode->_msg_id);
 		if (call_back_iter == _fun_callbacks.end()) {
 			_msg_que.pop();
-			std::cout << "msg id [" << msg_node->_recvnode->_msg_id << "] handler not found" << std::endl;
+		Logger::log(LogLevel::warning, 
+			"msg id [" + std::to_string(msg_node->_recvnode->_msg_id)+"] handler not found");
 			continue;
 		}
 		call_back_iter->second(msg_node->_session, msg_node->_recvnode->_msg_id, 
@@ -74,13 +77,12 @@ void LogicSystem::registerCallBacks() {
 }
 
 void LogicSystem::loginHandler(shared_ptr<CSession> session, const short &msg_id, const string &msg_data) {
+	Logger::log(LogLevel::info,"loginHandler is called");
 	json reader=json::parse(msg_data);
-	json root;
-	auto uid = root["uid"].get<int>();
-	std::cout << "user login uid is  " << uid << " user token  is "
-		<< root["token"].get<std::string>() << endl;
+	auto uid = reader["uid"].get<int>();
+	Logger::log(LogLevel::info,"user login uid is  " + std::to_string(uid) + " user token  is "+reader["token"].get<std::string>());
 	//从状态服务器获取token匹配是否准确
-	auto rsp = StatusGrpcClient::getInstance()->Login(uid, root["token"].get<std::string>());
+	auto rsp = StatusGrpcClient::getInstance()->Login(uid, reader["token"].get<std::string>());
 	json rtvalue;
 	Defer defer([this, &rtvalue, session]() {
 		std::string return_str = rtvalue.dump();
