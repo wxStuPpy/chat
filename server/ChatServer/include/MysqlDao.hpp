@@ -134,6 +134,7 @@ public:
     bool checkEmail(const std::string& name, const std::string & email);
     bool updatePwd(const std::string& name, const std::string& newPassword);
     bool checkPwd(const std::string& email, const std::string& password, UserInfo& userInfo);
+    std::shared_ptr<UserInfo> getUser(int uid);
     bool testProcedure(const std::string& email, int& userId, std::string& name);
 private:
     std::unique_ptr<MySqlPool> _connectionPool;

@@ -213,6 +213,45 @@ bool MysqlDao::checkPwd(const std::string& email, const std::string& pwd, UserIn
     }
 }
 
+std::shared_ptr<UserInfo> MysqlDao::getUser(int uid)
+{
+	auto conn = _connectionPool->getConnection();
+	if (conn == nullptr) {
+		return nullptr;
+	}
+
+	Defer defer([this, &conn]() {
+		_connectionPool->returnConnection(std::move(conn));
+		});
+
+	try {
+		// 准备SQL语句
+		std::unique_ptr<sql::PreparedStatement> pstmt(conn->_PConn->prepareStatement("SELECT * FROM user WHERE uid = ?"));
+		pstmt->setInt(1, uid); // 将uid替换为你要查询的uid
+
+		// 执行查询
+		std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+		std::shared_ptr<UserInfo> user_ptr = nullptr;
+		// 遍历结果集
+		while (res->next()) {
+			user_ptr.reset(new UserInfo);
+			user_ptr->pwd = res->getString("pwd");
+			user_ptr->email = res->getString("email");
+			user_ptr->name= res->getString("name");
+			user_ptr->uid = uid;
+			break;
+		}
+		return user_ptr;
+	}
+	catch (sql::SQLException& e) {
+		Logger::log(LogLevel::error,
+			"getUser(): SQLException: " + std::string(e.what()) +
+			" (MySQL error code: " + std::to_string(e.getErrorCode()) +
+			", SQLState: " + e.getSQLState() + ")");
+		return nullptr;
+	}
+}
+
 
 bool MysqlDao::testProcedure(const std::string& email, int& uid, std::string& name) {
 	auto conn = _connectionPool->getConnection();
