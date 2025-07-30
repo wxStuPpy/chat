@@ -12,8 +12,8 @@ std::condition_variable cond_quit;
 std::mutex mutex_quit;
 
 int main()
-{    Logger::init("/home/ywx/study/Chat/logs/ChatServer.log");
-  Logger::log(LogLevel::info, "ChatServer started.");
+{    Logger::init("/home/ywx/study/Chat/logs/ChatServer1.log");
+  Logger::log(LogLevel::info, "ChatServer1 started.");
     try {
         auto &cfg = ConfigMgr::getInstance();
         auto pool = AsioIOServicePool::getInstance();

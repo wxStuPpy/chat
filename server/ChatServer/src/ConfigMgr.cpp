@@ -39,3 +39,11 @@ ConfigMgr::ConfigMgr(){
     }
 
 }
+
+std::string ConfigMgr::getValue(const std::string& section, const std::string& key) {
+	if (_sections.find(section) == _sections.end()) {
+		return "";
+	}
+
+	return _sections[section].getValue(key);
+}

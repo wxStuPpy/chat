@@ -21,11 +21,13 @@ logs/
 !/server/StatusServer/src/main.cpp
 !/server/StatusServer/src/StatusServiceImpl.cpp
 !/server/StatusServer/src/message*
+!/server/StatusServer/src/ChatGrpcClient.cpp
 
 !/server/StatusServer/include/
 /server/StatusServer/include/**
 !/server/StatusServer/include/StatusServiceImpl.hpp
 !/server/StatusServer/include/message*
+!/server/StatusServer/include/ChatGrpcClient.hpp
 
 
 

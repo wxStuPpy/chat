@@ -203,7 +203,7 @@ LogicSystem::LogicSystem() {
         return true;
     }
     //查询StatusServer找到合适的连接
-    auto reply = StatusGrpcClient::getInstance()->GetChatServer(userInfo._uid);
+    auto reply = StatusGrpcClient::getInstance()->GetChatServer(userInfo.uid);
     if (reply.error()) {
         Logger::log(LogLevel::error, " rpc get chat server failed"+ reply.error());
         root["error"] = ErrorCodes::RPCGetFailed;
@@ -214,7 +214,7 @@ LogicSystem::LogicSystem() {
     Logger::log(LogLevel::info, " login succeed to "+ email);
     root["error"] = 0;
     root["email"] = email;
-    root["uid"] = userInfo._uid;
+    root["uid"] = userInfo.uid;
     root["token"] = reply.token();
     root["host"] = reply.host();
     root["port"] = reply.port();
